@@ -1,55 +1,68 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react";
 
-export default function App(){
-  const wsRef = useRef();
-  const messageRef = useRef();
-  const [message,setMessage] = useState<string[]>(["Hi There" , "I dont want to talk"]);
+export default function App() {
+  const wsRef = useRef<WebSocket | null>(null);
+  const messageRef = useRef<HTMLInputElement | null>(null);
+  const [message, setMessage] = useState<string[]>(["Hi There", "I don't want to talk"]);
 
-  function sendMessage(){
-    const value = messageRef.current.value;
-    if(!value){
+  function sendMessage() {
+    const value = messageRef.current?.value; 
+    if (!value) {
       alert("First write a message");
-    }
-    if(!wsRef.current){
       return;
     }
-    wsRef.current.send(JSON.stringify({
-      "type" : "chat",
-      "payload" : {
-        "message" : value
-      } 
-    }))
+    if (!wsRef.current) {
+      return;
+    }
+    wsRef.current.send(
+      JSON.stringify({
+        type: "chat",
+        payload: {
+          message: value,
+        },
+      })
+    );
+    if (messageRef.current) {
+      messageRef.current.value = ""; 
+    }
   }
-  useEffect(()=>{
+
+  useEffect(() => {
     const ws = new WebSocket("ws://localhost:8080");
+
     ws.onmessage = (event) => {
-      setMessage(m => [...m ,event.data]);
-    }
-    ws.onopen = ()=>{
-      ws.send(JSON.stringify({
-        "type" : "join",
-        "payload" : {
-          "roomId" : "red"
-        }
-      }))
-    }
+      setMessage((m) => [...m, event.data]);
+    };
+
+    ws.onopen = () => {
+      ws.send(
+        JSON.stringify({
+          type: "join",
+          payload: {
+            roomId: "red",
+          },
+        })
+      );
+    };
+
     wsRef.current = ws;
 
-    return ()=>{
+    return () => {
       ws.close();
-    }
-  },[])
-  return(
+    };
+  }, []);
+
+  return (
     <div className="h-screen bg-black">
-      <br /><br /><br />
-      <div className="h-[85vh]">
-        {message.map(message => 
-          <div className="m-8">
-            <span className="bg-white text-black rounded p-4">
-              {message}
-            </span>
+      <br />
+      <br />
+      <br />
+      <div className="h-[85vh] overflow-y-auto">
+        {message.map((message, index) => (
+          <div className="m-8" key={index}>
+            <span className="bg-white text-black rounded p-4">{message}</span>
           </div>
-        )}
+        ))}
       </div>
       <div className="w-full bg-white flex">
         <input ref={messageRef} className="flex-1 border-4 p-4" type="text" />
@@ -58,5 +71,5 @@ export default function App(){
         </button>
       </div>
     </div>
-  )
+  );
 }
